@@ -1,37 +1,29 @@
-import React from 'react';
-import { Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text } from 'react-native';
 import Screen from '../components/Screen';
-import InfoCard from '../components/InfoCard';
 import { colors } from '../constants/theme';
+import { getLatestNews } from '../services/f1';
 
-const topics = [
-  { id: 'intro', eyebrow: '01 • Introdução', title: 'Conheça o projeto', description: 'Entenda a proposta, os objetivos e como navegar pelas áreas do aplicativo.' },
-  { id: 'content', eyebrow: '02 • Conteúdo', title: 'Conteúdos principais', description: 'Espaço reservado para listar categorias, materiais e informações que serão conectadas à API.' },
-  { id: 'updates', eyebrow: '03 • Atualizações', title: 'Novidades', description: 'Área preparada para exibir atualizações recebidas do servidor futuramente.' },
-];
-
-export default function ExploreScreen({ onOpenDetails }) {
+export default function ExploreScreen() {
+  const [news, setNews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  useEffect(() => { getLatestNews().then(setNews).catch(() => setError('Não foi possível carregar as manchetes. Use o portal oficial abaixo.')).finally(() => setLoading(false)); }, []);
   return (
     <Screen>
-      <Text style={styles.kicker}>DESCUBRA</Text>
-      <Text style={styles.title}>Explorar</Text>
-      <Text style={styles.subtitle}>Acesse as áreas do projeto.</Text>
-      {topics.map((topic) => (
-        <InfoCard
-          key={topic.id}
-          eyebrow={topic.eyebrow}
-          title={topic.title}
-          description={topic.description}
-          actionLabel="Ver detalhes"
-          onPress={onOpenDetails}
-        />
-      ))}
+      <Text style={styles.kicker}>PADDOCK • ATUALIZAÇÕES</Text><Text style={styles.title}>Últimas notícias</Text><Text style={styles.subtitle}>As novidades mais recentes da Fórmula 1.</Text>
+      <Pressable style={styles.source} onPress={() => Linking.openURL('https://www.formula1.com/en/latest')}><Text style={styles.sourceText}>ABRIR PORTAL OFICIAL DA F1 ↗</Text></Pressable>
+      {loading ? <ActivityIndicator color={colors.primary} size="large" style={{marginTop:28}} /> : null}
+      {!!error && <Text style={styles.error}>{error}</Text>}
+      {news.map((item,index)=><Pressable key={item.id} style={styles.card} onPress={()=>Linking.openURL(item.link)}>
+        <Text style={styles.date}>{item.date ? new Date(item.date).toLocaleDateString('pt-BR') : 'F1 NEWS'} • {String(index+1).padStart(2,'0')}</Text>
+        <Text style={styles.newsTitle}>{item.title}</Text>
+        {!!item.description && <Text style={styles.description} numberOfLines={3}>{item.description}</Text>}
+        <Text style={styles.read}>LER MATÉRIA ↗</Text>
+      </Pressable>)}
+      {!loading && !news.length && !error ? <Text style={styles.error}>Nenhuma manchete disponível agora.</Text> : null}
+      <Text style={styles.footnote}>Feed Autosport • As matérias abrem no site de origem.</Text>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  kicker: { color: colors.primary, fontSize: 11, fontWeight: '800', letterSpacing: 1.5, marginBottom: 10 },
-  title: { color: colors.text, fontSize: 32, fontWeight: '900' },
-  subtitle: { color: colors.muted, fontSize: 14, marginTop: 8, marginBottom: 24 },
-});
+const styles=StyleSheet.create({kicker:{color:colors.primary,fontSize:10,fontWeight:'900',letterSpacing:1.6,marginBottom:10},title:{color:colors.text,fontSize:30,fontWeight:'900'},subtitle:{color:colors.muted,fontSize:13,marginTop:8,marginBottom:20},source:{backgroundColor:colors.primary,borderRadius:12,padding:14,marginBottom:18},sourceText:{color:colors.white,fontWeight:'900',fontSize:10,textAlign:'center',letterSpacing:1},card:{backgroundColor:colors.surface,borderColor:colors.border,borderWidth:1,borderRadius:16,padding:16,marginBottom:12},date:{color:colors.muted,fontSize:10,marginBottom:12},newsTitle:{color:colors.text,fontSize:16,lineHeight:22,fontWeight:'900'},description:{color:colors.muted,fontSize:11,lineHeight:17,marginTop:8},read:{color:colors.primary,fontSize:9,fontWeight:'900',marginTop:14},error:{color:'#FF8B85',fontSize:12,lineHeight:18,marginTop:20},footnote:{color:'#737B86',fontSize:9,marginTop:10,marginBottom:12}});
